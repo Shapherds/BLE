@@ -1,14 +1,13 @@
 package com.example.ble
 
 import android.Manifest
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
+import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.content.ContentValues.TAG
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -24,6 +23,43 @@ class MainActivity : AppCompatActivity() {
     private val list = mutableListOf<DeviceInfo>()
     private val leDeviceListAdapter = DeviceAdapter()
 
+    private val bluetoothGattCallback = object : BluetoothGattCallback() {
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                gatt.discoverServices()
+                showLog("connected")
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                showLog("disconnected")
+            }
+        }
+
+        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                displayGattServices(gatt?.services)
+            } else {
+                showLog("onServicesDiscovered received: $status")
+            }
+        }
+    }
+
+    private fun displayGattServices(gattServices: List<BluetoothGattService>?) {
+        if (gattServices == null) return
+        resources.getString(R.string.unknown_service)
+        resources.getString(R.string.unknown_characteristic)
+//        mGattCharacteristics = mutableListOf()
+
+        // Loops through available GATT Services.
+        gattServices.forEach { gattService ->
+            val gattCharacteristics = gattService.characteristics
+            showLog("service $gattService")
+
+            // Loops through available Characteristics.
+            gattCharacteristics.forEach { gattCharacteristic ->
+                showLog("characteristics : $gattCharacteristic")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -32,7 +68,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        Log.e("Logs", bluetoothLeAdapter.isEnabled.toString())
+        showLog(bluetoothLeAdapter.isEnabled.toString())
         if (!bluetoothLeAdapter.isEnabled) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
@@ -99,15 +135,14 @@ class MainActivity : AppCompatActivity() {
                 list.add(device)
                 leDeviceListAdapter.submitList(list)
                 leDeviceListAdapter.notifyDataSetChanged()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    showLog(
-                        "device info : name= ${result.device.name}," +
-                                " uui = ${result.device.uuids}," +
-                                " type = ${result.device.type} " +
-                                " address = ${result.device.address}" +
-                                " alias = ${result.device.alias}"
-                    )
-                }
+                showLog(
+                    "device info : name= ${result.device.name}," +
+                            " uui = ${result.device.uuids}," +
+                            " type = ${result.device.type} " +
+                            " address = ${result.device.address}"
+                )
+                connect(result.device.address)
+
             }
         }
 
@@ -119,6 +154,18 @@ class MainActivity : AppCompatActivity() {
         override fun onBatchScanResults(results: MutableList<ScanResult>?) {
             showLog("batch")
             super.onBatchScanResults(results)
+        }
+    }
+
+    fun connect(address: String) {
+        bluetoothLeAdapter.let { adapter ->
+            try {
+                val device = adapter.getRemoteDevice(address)
+                device.connectGatt(this@MainActivity, false, bluetoothGattCallback)
+            } catch (exception: IllegalArgumentException) {
+                Log.w(TAG, "Device not found with provided address.")
+            }
+            // connect to the GATT server on the device
         }
     }
 
