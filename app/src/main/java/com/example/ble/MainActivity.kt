@@ -43,19 +43,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayGattServices(gattServices: List<BluetoothGattService>?) {
+        showLog("display null ?")
         if (gattServices == null) return
-        resources.getString(R.string.unknown_service)
-        resources.getString(R.string.unknown_characteristic)
-//        mGattCharacteristics = mutableListOf()
+        showLog("shows")
 
         // Loops through available GATT Services.
         gattServices.forEach { gattService ->
             val gattCharacteristics = gattService.characteristics
-            showLog("service $gattService")
+            showLog("service ${gattService.uuid}")
 
             // Loops through available Characteristics.
             gattCharacteristics.forEach { gattCharacteristic ->
-                showLog("characteristics : $gattCharacteristic")
+                showLog("characteristics : ${gattCharacteristic.uuid}")
             }
         }
     }
@@ -141,7 +140,10 @@ class MainActivity : AppCompatActivity() {
                             " type = ${result.device.type} " +
                             " address = ${result.device.address}"
                 )
-                connect(result.device.address)
+//                if (result.device.address == "53:D7:64:EB:D3:DE") {
+//                    showLog("LOG!")
+                    connect(result.device.address)
+     //           }
 
             }
         }
