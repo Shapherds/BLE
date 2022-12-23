@@ -19,6 +19,12 @@ import androidx.recyclerview.widget.RecyclerView
 class MainActivity : AppCompatActivity() {
 
     private val bluetoothLeAdapter = BluetoothAdapter.getDefaultAdapter()
+    /*
+        private val bluetoothLeAdapter: BluetoothAdapter by lazy {
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothManager.adapter
+    }
+     */
     private var scanning = false
     private val list = mutableListOf<DeviceInfo>()
     private val leDeviceListAdapter = DeviceAdapter()
@@ -101,12 +107,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scanLeDevice() {
-        if (!scanning) {
-            Handler(Looper.getMainLooper()).postDelayed({
-                scanning = false
-                bluetoothLeAdapter.bluetoothLeScanner.stopScan(leScanCallback)
-                showLog("scan stop")
-            }, SCAN_PERIOD)
+//        if (!scanning) {
+//            Handler(Looper.getMainLooper()).postDelayed({
+//                scanning = false
+//                bluetoothLeAdapter.bluetoothLeScanner.stopScan(leScanCallback)
+//                showLog("scan stop")
+//            }, SCAN_PERIOD)
             scanning = true
             bluetoothLeAdapter.bluetoothLeScanner.startScan(
                 null,
@@ -119,16 +125,17 @@ class MainActivity : AppCompatActivity() {
                     .build(), leScanCallback
             )
             showLog("scan started")
-        } else {
-            scanning = false
-            bluetoothLeAdapter.bluetoothLeScanner.stopScan(leScanCallback)
-        }
+//        } else {
+//            scanning = false
+//            bluetoothLeAdapter.bluetoothLeScanner.stopScan(leScanCallback)
+//        }
     }
 
     private val leScanCallback: ScanCallback = object : ScanCallback() {
 
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
+            showLog("scan")
             if (result.device.name != null && !checkSame(result.device)) {
                 val device = DeviceInfo(result.device.name, result.device.address)
                 list.add(device)
@@ -142,9 +149,8 @@ class MainActivity : AppCompatActivity() {
                 )
 //                if (result.device.address == "53:D7:64:EB:D3:DE") {
 //                    showLog("LOG!")
-                    connect(result.device.address)
+//                    connect(result.device.address)
      //           }
-
             }
         }
 
